@@ -1,0 +1,7 @@
+http://ug93tad.github.io/pbft/
+
+我的理解,都对,除了最后的pset和qset.
+
+感觉如果Primary收到了,根绝review.md里mac的想法,需要扩大quorum,或者收集到2f+1张非null的票.当然不扩大quorum,
+就得碰运气正好收到非null的票,liveness可以达到.但是收2f+1个请求,里面没有2f+1张票,也就是含空票,就得再view change.
+很不划算.

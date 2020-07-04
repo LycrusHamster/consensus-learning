@@ -90,3 +90,32 @@ sync可以成功.共识又活了.
 
 2次quorum交换信息的时候,都最多只能有f个faulty,但是可以分别是不同的faulty.不能有超过f个faulty的情形.
 如果有超过f个faulty的情形,只能靠其他手段弥补,比如sync/statetransfer.
+
+疑问
+
+prepare和commit阶段,是不是收到f+2个一致的消息就可以了?
+不行(f+2) + (f+2) - (3f+1), 在f=3的时候 交集为0,表现为
+
+P,X,Y 为byz节点
+A,B互相收到了PXY和A/B的0
+C,D互相收到了PXY和C/D的1
+E,F,G互相收到了PXY和E/F/G/其中一个的2
+
+那么最后的记过是,AB=0,CD=1,EFG=2.
+下一轮的quorum时,q=5,完全没有办法统一.
+
+sync是弥补sync那个seqno下,faulty节点超过f的情况.
+next seqno 和 viewchange都是2多个quorum的碰撞,每个quorum只能有包含f个faulty.
+1round,AB和F达成共识1,C离线.然后F离线,ABC进入下一轮round,那么quorum碰撞将失败,因为可能C上线后空白,quorum碰撞只有一个节点有数据.
+所以无法判断真假.那个节点可以地上p-cert的信息来证明,这就等同于将上一轮的faulty定义为C.当然C也可以先完成上一轮的同步,将上一轮的faulty定义为F.
+
+
+sync的时候,因为有P-cert,所以可以还原当时的quorum.并且只问1个节点索取信息.p-cert是>2/3的prepared,也就是committed,
+如果没有p-cert,那么就要问所有节点,获得至少f+1个相同的prepare信息,且non-faulty节点必须是在**committed-local**的情况下?
+我感觉这是对的,就把这个节点当做client来看到.
+
+???
+但是必须小心的是,如果节点进入了prepared,把>2/3的prepare信息加入了Pset,但是最后没有进入committed-local(由于byz节点装死),那么
+pset会传递下去,但是byz不响应,pset不够了,所以就会宕住.但是non-faulty节点又没有办法知晓别的节点是否prepared了.
+而空白节点,能获取f+1个节点进入了prepared,由于byz节点装死,所以仍然不该保证committed状态.所以提供pset(committed),
+或者f+1节点+那f+1个诚实节点的必须committed-local(committed-local相当于承认了pset).
